@@ -4,32 +4,34 @@ commands:
   destroy-environment:
     description: Destroy back-end and front-end cloudformation stacks given a workflow ID.
     parameters:
-      # Add parameter here   
+      workflow_id:
+        type: string 
     steps:
       - run:
           name: Destroy environments
           when: on_fail
           command: |
-            # Your code here
-            exit 1
+            aws cloudformation delete-stack --stack-name udapeople-backend-<< parameters.workflow_id >>
+            aws cloudformation delete-stack --stack-name udapeople-frontend-<< parameters.workflow_id >>
+            aws s3 rb s3://udapeople-${CIRCLE_WORKFLOW_ID:0:7} --force
 
   revert-migrations:
     description: Revert the last migration if successfully run in the current workflow.
     parameters:
-      # Add parameter here     
+      workflow_id:
+        type: string
     steps:
       - run:
           name: Revert migrations
-          # Add when this will run
-          command: |
-            # Curl command here to see if there was a successful migration associated with the workflow id, store result in SUCCESS variable
-            SUCCESS = 1
+          when: on_fail
+          command: |  
+            SUCCESS = $(curl -H "token: c1e87c17-a216-4aeb-b8ea-76bc493804c8" \
+            --request GET https://api.memstash.io/values/migration_${CIRCLE_WORKFLOW_ID:0:7})       
             if(( $SUCCESS==1 )); 
             then
-            #  cd ~/project/backend
-            #  npm install
-            #  Add revert code here. You can find this in the Getting Started section.
-              exit 1
+              cd backend
+              npm i
+              npm run migrations:revert
             fi
             
 jobs:
@@ -169,7 +171,8 @@ jobs:
           root: ~/
           paths:
             - project/.circleci/ansible/inventory
-      # Here's where you will add some code to rollback on failure      
+      - destroy-environment:
+          workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}
 
   configure-infrastructure:
     docker:
@@ -188,25 +191,25 @@ jobs:
           name: Configure server
           command: |
             cd .circleci/ansible
-            ansible-playbook configure-server.yml -i inventory
-      # Here's where you will add some code to rollback on failure      
+            ansible-playbook configure-server.yml -i inventory     
 
-#   run-migrations:
-#     docker:
-#       # Docker image here that supports NodeJS
-#     steps:
-#       # Checkout code from git
-#       - run:
-#           name: Run migrations
-#           command: |
-#             # Your code here
-#             exit 1
-#       - run:
-#           name: Send migration results to memstash
-#           command: |
-#             # Your code here
-#             exit 1
-#      # Here's where you will add some code to rollback on failure      
+  run-migrations:
+    docker:
+      - image: circleci/node:13.8.0
+    steps:
+      - checkout
+      - run:
+          name: Run migrations
+          command: |
+            cd backend
+            npm i
+            npm run migrations > migrations.txt
+      - run:
+          name: Send migration results to memstash
+          command: |
+              grep "has been executed successfully" migrations.txt
+              curl -H "Content-Type: text/plain" -H "token: c1e87c17-a216-4aeb-b8ea-76bc493804c8" \
+              --request PUT --data "1" https://api.memstash.io/values/migration_${CIRCLE_WORKFLOW_ID:0:7}
 
 #   deploy-frontend:
 #     docker:
@@ -324,8 +327,8 @@ workflows:
               only: [master]
       - configure-infrastructure:
           requires: [deploy-infrastructure]
-      # - run-migrations:
-      #     requires: [configure-infrastructure]
+      - run-migrations:
+          requires: [configure-infrastructure]
       # - deploy-frontend:
       #     requires: [run-migrations]
       # - deploy-backend:
