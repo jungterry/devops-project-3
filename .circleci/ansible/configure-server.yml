@@ -62,7 +62,7 @@
           export TYPEORM_PORT=5432
           export TYPEORM_USERNAME=postgres
           export TYPEORM_PASSWORD=udapeople123
-          export TYPEORM_DATABASE=udapeople
+          export TYPEORM_DATABASE=postgres
 
   roles:
     - configure-server
