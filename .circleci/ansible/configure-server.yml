@@ -53,7 +53,7 @@
     - name: "configure enviroment varibales"
       become: yes
       blockinfile:
-        path: ~/.bash_profile
+        path: ~/.profile
         block: |
           export ENVIRONMENT=production
           export TYPEORM_CONNECTION=postgres
