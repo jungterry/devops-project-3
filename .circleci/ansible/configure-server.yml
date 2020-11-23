@@ -65,4 +65,4 @@
           export TYPEORM_DATABASE=udapeople-prod
 
   roles:
-    - configure
+    - configure-server
