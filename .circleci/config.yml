@@ -167,7 +167,6 @@ jobs:
             --query 'Reservations[*].Instances[*].PublicIpAddress' \
             --output text >> ./.circleci/ansible/inventory
             cat ./.circleci/ansible/inventory
-            exit 1
       - persist_to_workspace:
           root: ~/
           paths:
@@ -223,6 +222,7 @@ jobs:
       - run:
           name: Install dependencies
           command: |
+            exit 1
             curl -sL https://rpm.nodesource.com/setup_lts.x | bash -
             yum -y install nodejs tar gzip
       - run:
