@@ -8,7 +8,7 @@
 - name: "install node modules"
   shell: |
     cd /home/ubuntu/backend
-    npm install
+    npm i
 
 - name: "build package"
   shell: |
