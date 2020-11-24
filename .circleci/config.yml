@@ -13,7 +13,7 @@ commands:
           command: |
             aws cloudformation delete-stack --stack-name udapeople-backend-<< parameters.workflow_id >>
             aws cloudformation delete-stack --stack-name udapeople-frontend-<< parameters.workflow_id >>
-            aws s3 rb s3://udapeople-${CIRCLE_WORKFLOW_ID:0:7} --force
+            aws s3 rb s3://udapeople-<< parameters.workflow_id >> --force
 
   revert-migrations:
     description: Revert the last migration if successfully run in the current workflow.
@@ -27,7 +27,7 @@ commands:
           command: |  
             SUCCESS = $(curl -H "token: c1e87c17-a216-4aeb-b8ea-76bc493804c8" \
             --request GET https://api.memstash.io/values/migration_<< parameters.workflow_id >>)
-            if(( $SUCCESS==1 )); 
+            if $SUCCESS == "1"
             then
               cd backend
               npm i
@@ -167,6 +167,7 @@ jobs:
             --query 'Reservations[*].Instances[*].PublicIpAddress' \
             --output text >> ./.circleci/ansible/inventory
             cat ./.circleci/ansible/inventory
+            exit 1
       - persist_to_workspace:
           root: ~/
           paths:
@@ -208,8 +209,11 @@ jobs:
       - run:
           name: Send migration results to memstash
           command: |
-              curl -H "Content-Type: text/plain" -H "token: c1e87c17-a216-4aeb-b8ea-76bc493804c8" \
-              --request PUT --data "1" https://api.memstash.io/values/migration_${CIRCLE_WORKFLOW_ID:0:7}
+              if grep "executed successfully" migrations.txt
+              then
+                curl -H "Content-Type: text/plain" -H "token: c1e87c17-a216-4aeb-b8ea-76bc493804c8" \
+                --request PUT --data "1" https://api.memstash.io/values/migration_${CIRCLE_WORKFLOW_ID:0:7}
+              fi
 
   deploy-frontend:
     docker:

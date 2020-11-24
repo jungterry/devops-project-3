@@ -6,6 +6,11 @@
     src: /root/project/backend
     dest: /home/ubuntu
 
+- name: "install node modules"
+  shell: |
+    cd /home/ubuntu/backend
+    npm install
+
 - name: "building node services"
   become: yes
   shell: |
