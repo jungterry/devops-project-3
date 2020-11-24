@@ -210,8 +210,6 @@ jobs:
           command: |
               curl -H "Content-Type: text/plain" -H "token: c1e87c17-a216-4aeb-b8ea-76bc493804c8" \
               --request PUT --data "1" https://api.memstash.io/values/migration_${CIRCLE_WORKFLOW_ID:0:7}
-      - destroy-environment:
-          workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}
 
   deploy-frontend:
     docker:
@@ -222,8 +220,7 @@ jobs:
           name: Install dependencies
           command: |
             curl -sL https://rpm.nodesource.com/setup_lts.x | bash -
-            yum -y install nodejs
-            yum -y install tar gzip
+            yum -y install nodejs tar gzip
       - run:
           name: Get backend url
           command: |
@@ -258,9 +255,11 @@ jobs:
       - run:
           name: Install dependencies
           command: |
-            apk add --update tar gzip ansible
+            apk add --update tar gzip ansible curl
+            pip install awscli
       - run:
           name: Deploy backend
+          no_output_timeout: 30m
           command: |
             tar -C backend -czvf artifact.tar.gz .
             cd .circleci/ansible
