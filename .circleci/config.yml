@@ -187,11 +187,14 @@ jobs:
           name: Install dependencies
           command: |
             apk add --update ansible
+            pip install awscli
       - run:
           name: Configure server
           command: |
             cd .circleci/ansible
-            ansible-playbook configure-server.yml -i inventory     
+            ansible-playbook configure-server.yml -i inventory
+      - destroy-environment:
+          workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}
 
   run-migrations:
     docker:
@@ -217,12 +220,11 @@ jobs:
           name: Send migration results to memstash
           command: |
               cd backend
-              # if grep "executed successfully" migrations.txt
-              #   then 
-                  curl -H "Content-Type: text/plain" -H "token: c1e87c17-a216-4aeb-b8ea-76bc493804c8" \
-                  --request PUT --data "1" https://api.memstash.io/values/migration_${CIRCLE_WORKFLOW_ID:0:7}
-              # fi
-              exit 1
+              if grep "executed successfully" migrations.txt
+              then 
+                curl -H "Content-Type: text/plain" -H "token: c1e87c17-a216-4aeb-b8ea-76bc493804c8" \
+                --request PUT --data "1" https://api.memstash.io/values/migration_${CIRCLE_WORKFLOW_ID:0:7}
+              fi
       - destroy-environment:
           workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}
 
@@ -272,7 +274,7 @@ jobs:
           name: Install dependencies
           command: |
             exit 1
-            apk add --update tar gzip ansible curl
+            apk add --update nodejs tar gzip ansible curl
             pip install awscli
       - run:
           name: Deploy backend
@@ -286,32 +288,41 @@ jobs:
       - revert-migrations:
           workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}
 
-  # smoke-test:
-  #   docker:
-  #     - image: python:3.7-alpine3.11 
-  #   steps:
-  #     - checkout
-  #     - run:
-  #         name: Install dependencies
-  #         command: |
-  #           apk add --update curl
-  #           pip install awscli
-  #     - run:
-  #         name: Get backend url
-  #         command: |
-  #           BACKEND_IP=$(aws ec2 describe-instances \
-  #           --filters "Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID:0:7}" \
-  #           --query 'Reservations[*].Instances[*].PublicIpAddress' \
-  #           --output text)
-  #     - run:
-  #         name: Backend smoke test
-  #         command: |
-  #           curl "http://${BACKEND_IP}:3030/api/status"
-  #     - run:
-  #         name: Frontend smoke test.
-  #         command: |
-  #           # your code here
-      # Here's where you will add some code to rollback on failure  
+  smoke-test:
+    docker:
+      - image: python:3.7-alpine3.11 
+    steps:
+      - checkout
+      - run:
+          name: Install dependencies
+          command: |
+            apk add --update nodejs curl
+            pip install awscli
+      - run:
+          name: Get backend url
+          command: |
+            BACKEND_IP=$(aws ec2 describe-instances \
+            --filters "Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID:0:7}" \
+            --query 'Reservations[*].Instances[*].PublicIpAddress' \
+            --output text)
+      - run:
+          name: Backend smoke test
+          command: |
+            curl "http://${BACKEND_IP}:3030/api/status"
+      - run:
+          name: Frontend smoke test
+          command: |
+            URL="http://udapeople-${CIRCLE_WORKFLOW_ID:0:7}.s3.website.us-west-2.amazonaws.com"
+            if curl -s ${URL} | grep "Welcome"
+            then
+              return 1
+            else
+              return 0
+            fi
+      - destroy-environment:
+          workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}
+      - revert-migrations:
+          workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}
 
 #   cloudfront-update:
 #     docker:
