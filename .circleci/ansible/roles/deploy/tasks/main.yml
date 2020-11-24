@@ -15,11 +15,6 @@
     cd /home/ubuntu/backend
     npm run build
 
-- name: "run migrations again"
-  shell: |
-    cd /home/ubuntu/backend
-    npm run migrations
-
 - name: "executing node"
   become: yes
   shell: |
