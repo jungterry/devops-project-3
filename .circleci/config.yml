@@ -25,13 +25,15 @@ commands:
           name: Revert migrations
           when: on_fail
           command: |  
-            SUCCESS = $(curl -H "token: c1e87c17-a216-4aeb-b8ea-76bc493804c8" \
+            SUCCESS=$(curl -H "token: c1e87c17-a216-4aeb-b8ea-76bc493804c8" \
             --request GET https://api.memstash.io/values/migration_<< parameters.workflow_id >>)
-            if ((SUCCESS == 1));
+            if (( $SUCCESS==1 ));
             then
               cd backend
               npm i
               npm run migrations:revert
+            else
+              echo "No migration occurred"
             fi
             
 jobs:
@@ -224,6 +226,9 @@ jobs:
               then 
                 curl -H "Content-Type: text/plain" -H "token: c1e87c17-a216-4aeb-b8ea-76bc493804c8" \
                 --request PUT --data "1" https://api.memstash.io/values/migration_${CIRCLE_WORKFLOW_ID:0:7}
+              else
+                curl -H "Content-Type: text/plain" -H "token: c1e87c17-a216-4aeb-b8ea-76bc493804c8" \
+                --request PUT --data "0" https://api.memstash.io/values/migration_${CIRCLE_WORKFLOW_ID:0:7}
               fi
       - destroy-environment:
           workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}
@@ -236,12 +241,12 @@ jobs:
       - run:
           name: Install dependencies
           command: |
-            exit 1
             curl -sL https://rpm.nodesource.com/setup_lts.x | bash -
             yum -y install nodejs tar gzip
       - run:
           name: Get backend url
           command: |
+            exit 1
             export BACKEND_IP=$(aws ec2 describe-instances \
             --filters "Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID:0:7}" \
             --query 'Reservations[*].Instances[*].PublicIpAddress' \
@@ -273,13 +278,13 @@ jobs:
       - run:
           name: Install dependencies
           command: |
-            exit 1
             apk add --update nodejs tar gzip ansible curl
             pip install awscli
       - run:
           name: Deploy backend
           no_output_timeout: 30m
           command: |
+            exit 1
             tar -C backend -czvf artifact.tar.gz .
             cd .circleci/ansible
             ansible-playbook deploy-backend.yml -i inventory
@@ -324,20 +329,28 @@ jobs:
       - revert-migrations:
           workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}
 
-#   cloudfront-update:
-#     docker:
-#       # Docker image here that supports AWS CLI
-#     steps:
-#       # Checkout code from git
-#       - run:
-#           name: Install dependencies
-#           command: |
-#             # your code here
-#       - run:
-#           name: Update cloudfront distribution
-#           command: |
-#             # your code here
-#       # Here's where you will add some code to rollback on failure  
+  cloudfront-update:
+    docker:
+      - image: amazon/aws-cli
+    steps:
+      - checkout
+      - run:
+          name: Install dependencies
+          command: |
+            curl -sL https://rpm.nodesource.com/setup_lts.x | bash -
+            yum -y install nodejs tar gzip
+      - run:
+          name: Update cloudfront distribution
+          command: |
+            aws cloudformation deploy \
+            --template-file .circleci/files/cloudfront.yml \
+            --tags project=udapeople \
+            --stack-name "udapeople-cloundfront-${CIRCLE_WORKFLOW_ID:0:7}" \
+            --parameter-overrides WorkflowID="${CIRCLE_WORKFLOW_ID:0:7}" 
+      - destroy-environment:
+          workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}
+      - revert-migrations:
+          workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}
 
 # cleanup:
 #     docker:
