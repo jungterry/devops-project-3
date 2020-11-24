@@ -1,23 +1,20 @@
 ---
 
-- name: copy backend dist files to remote server
+- name: "copy backend dist files to remote server"
+  become: yes
   copy:
     src: /root/project/backend
     dest: /home/ubuntu
 
-- name: install node modules
-  shell: |
-    cd /home/ubuntu/backend
-    npm i
-
-- name: building node services
+- name: "building node services"
+  become: yes
   shell: |
     cd /home/ubuntu/backend
     npm run build
     npm run prestart:prod
 
-- name: executing node
-  become: true
+- name: "executing node"
+  become: yes
   shell: |
     cd /home/ubuntu/backend 
     pm2 start npm --name backend -- start
