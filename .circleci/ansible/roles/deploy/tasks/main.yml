@@ -8,8 +8,6 @@
 - name: install node modules
   shell: |
     cd /home/ubuntu/backend
-    ls -la
-    printenv
     npm i
 
 - name: building node services
@@ -17,11 +15,6 @@
     cd /home/ubuntu/backend
     npm run build
     npm run prestart:prod
-
-- name: "run migrations again"
-  shell: |
-    cd /home/ubuntu/backend
-    npm run migrations
 
 - name: executing node
   become: true
