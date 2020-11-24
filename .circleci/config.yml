@@ -199,6 +199,12 @@ jobs:
     steps:
       - checkout
       - run:
+          name: Install dependencies
+          command: |
+            curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+            unzip awscliv2.zip
+            sudo ./aws/install
+      - run:
           name: Run migrations
           command: |
             cd backend
@@ -210,9 +216,12 @@ jobs:
           command: |
               cd backend
               if grep "executed successfully" migrations.txt
-                curl -H "Content-Type: text/plain" -H "token: c1e87c17-a216-4aeb-b8ea-76bc493804c8" \
-                --request PUT --data "1" https://api.memstash.io/values/migration_${CIRCLE_WORKFLOW_ID:0:7}
+                then 
+                  curl -H "Content-Type: text/plain" -H "token: c1e87c17-a216-4aeb-b8ea-76bc493804c8" \
+                  --request PUT --data "1" https://api.memstash.io/values/migration_${CIRCLE_WORKFLOW_ID:0:7}
               fi
+      - destroy-environment:
+          workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}
 
   deploy-frontend:
     docker:
