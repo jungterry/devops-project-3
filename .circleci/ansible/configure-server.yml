@@ -35,4 +35,5 @@
           export TYPEORM_DATABASE=postgres
 
   roles:
+    - configure-prometheus-node-exporter
     - configure-server
