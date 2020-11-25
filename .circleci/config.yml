@@ -372,6 +372,7 @@ jobs:
             --no-paginate --output text)
             export STACKS=($(aws cloudformation list-stacks --query "StackSummaries[*].StackName" \
             --stack-status-filter CREATE_COMPLETE --no-paginate --output text))
+            echo Old Workflow ID: "${OldWorkflowID}"
       - run:
           name: Remove old stacks and files
           command: |
