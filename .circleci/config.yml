@@ -365,7 +365,7 @@ jobs:
             curl -sL https://rpm.nodesource.com/setup_lts.x | bash -
             yum -y install nodejs tar gzip
       - run:
-          name: Get old stack workflow id
+          name: Remove old stacks and files
           command: |
             export OldWorkflowID=$(aws cloudformation \
             list-exports --query "Exports[?Name==\`WorkflowID\`].Value" \
@@ -373,9 +373,7 @@ jobs:
             export STACKS=($(aws cloudformation list-stacks --query "StackSummaries[*].StackName" \
             --stack-status-filter CREATE_COMPLETE --no-paginate --output text))
             echo Old Workflow ID: "${OldWorkflowID}"
-      - run:
-          name: Remove old stacks and files
-          command: |
+            
             if [[ "${STACKS[@]}" =~ "${OldWorkflowID}" ]]
             then
               aws s3 rb s3://udapeople-${OldWorkflowID} --force
