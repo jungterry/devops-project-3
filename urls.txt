@@ -1,0 +1,5 @@
+URL01: https://github.com/jungterry/devops-project-3
+URL02: http://udapeople-a150537.s3-website-us-west-2.amazonaws.com
+URL03: http://d18i8yacq64aog.cloudfront.net
+URL04: http://ec2-34-218-206-80.us-west-2.compute.amazonaws.com:3030/api/status
+URL05: http://ec2-54-213-8-81.us-west-2.compute.amazonaws.com:9090/targets
